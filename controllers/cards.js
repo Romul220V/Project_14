@@ -7,8 +7,15 @@ module.exports.getCards = (req, res) => {
 };
 
 module.exports.delCardId = (req, res) => {
-  Card.findOneAndRemove({ _id: req.params.cardId })
+  const { owner = req.user._id } = req.body;
+  Card.findOne({ _id: req.params.cardId, owner })
     .orFail(new Error('WrongId'))
+    .then((card) => {
+      if (owner !== card.owner) {
+        return Promise.reject(new Error('Вы не создатель этой карты и не можете удалить её'));
+      }
+      return Card.findOneAndRemove({ _id: req.params.cardId });
+    })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.message === 'WrongId') {
