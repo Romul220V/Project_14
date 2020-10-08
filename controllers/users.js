@@ -22,7 +22,8 @@ module.exports.login = (req, res) => {
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
       res
-        .cookie('jwt', token, { httpOnly: true });
+        .cookie('jwt', token, { httpOnly: true })
+        .status(200).send({ message: 'logged in' });
     })
     .catch((err) => {
       res
@@ -39,28 +40,39 @@ module.exports.getUsers = (req, res) => {
 
 module.exports.getUsersId = (req, res) => {
   User.find({ _id: req.params.userId })
-    .orFail(new Error('WrongId'))
+    .orFail(() => new Error('Not Found'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.message === 'WrongId') {
-        res.status(404).send({ message: 'Нет пользователя с таким id' });
+      if (err.message === 'CastError') {
+        res.status(400).send({ message: 'Нет пользователя с таким id' });
+      } else if (err.message === 'Not Found') {
+        res.status(404).send({ message: 'Объект не найден' });
       } else { res.status(500).send({ message: 'Ошибка сервера' }); }
     });
 };
-
+// eslint-disable-next-line consistent-return
 module.exports.createUser = (req, res) => {
   const {
     email, password, name, about, avatar,
   } = req.body;
+  // eslint-disable-next-line no-useless-escape
+  const newpass = password.replace(/\s/g, '');
+  if (newpass.length === 0) {
+    return res.status(400).send({ message: 'Переданы некорректные данные' });
+  }
   bcrypt.hash(password, 10)
     .then((hash) => User.create({
       email, password: hash, name, about, avatar,
     }))
-    .then((user) => res.send({ data: user }))
+    .then(() => res.send({ // destructur
+      data: {
+        email, name, about, avatar,
+      },
+    }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: 'Переданы некорректные данные' });
-      } else {
+      } else if (err.name === 'MongoError' && err.code === 11000) { res.status(409).send({ message: 'Данный почтовый ящик уже зарегистрирован' }); } else {
         res.status(500).send({ message: 'Ошибка сервера' });
       }
     });
