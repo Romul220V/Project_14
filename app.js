@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const cards = require('./routes/cards');
+const users = require('./routes/users');
 const errorpage = require('./routes/404');
 const { login, createUser } = require('./controllers/users');
 const auth = require('./middlewares/auth');
@@ -28,6 +29,7 @@ app.use(limiter);
 app.post('/signin', login);
 app.post('/signup', createUser);
 app.use(auth);
+app.use('/', users);
 app.use('/', cards);
 app.use('/', errorpage);
 app.listen(PORT, () => {

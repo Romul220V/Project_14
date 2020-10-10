@@ -43,7 +43,7 @@ module.exports.getUsersId = (req, res) => {
     .orFail(() => new Error('Not Found'))
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.message === 'CastError') {
+      if (err.name === 'CastError') {
         res.status(400).send({ message: 'Нет пользователя с таким id' });
       } else if (err.message === 'Not Found') {
         res.status(404).send({ message: 'Объект не найден' });
