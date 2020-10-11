@@ -3,9 +3,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const users = require('./routes/users');
+const rateLimit = require('express-rate-limit');
 const cards = require('./routes/cards');
+const users = require('./routes/users');
 const errorpage = require('./routes/404');
+const { login, createUser } = require('./controllers/users');
+const auth = require('./middlewares/auth');
 
 const { PORT = 3000, BASE_PATH } = process.env;
 const app = express();
@@ -18,15 +21,15 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useFindAndModify: false,
 });
 
-app.use('/', users);
-app.use((req, res, next) => {
-  req.user = {
-    _id: '5f706d4b2674ec5128cd040b',
-  };
-
-  next();
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 100,
 });
-
+app.use(limiter);
+app.post('/signin', login);
+app.post('/signup', createUser);
+app.use(auth);
+app.use('/', users);
 app.use('/', cards);
 app.use('/', errorpage);
 app.listen(PORT, () => {

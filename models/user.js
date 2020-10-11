@@ -1,14 +1,14 @@
 const mongoose = require('mongoose');
-const validatemail = require('validator');
-// check validate url
+const validatestring = require('validator');
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
     validate: {
       validator(v) {
-        return validatemail.isEmail(v);
+        return validatestring.isEmail(v);
       },
-      message: (props) => `${props.value} is not an picture`,
+      message: (props) => `${props.value} is not an email`,
     },
     unique: true,
     required: true,
@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
+    select: false,
   },
   name: {
     type: String,
@@ -33,8 +34,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     validate: {
       validator(v) {
-        // eslint-disable-next-line no-useless-escape
-        return /^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$/.test(v);
+        return validatestring.isURL(v);
       },
       message: (props) => `${props.value} is not an picture`,
     },

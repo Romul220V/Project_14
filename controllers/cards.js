@@ -7,13 +7,22 @@ module.exports.getCards = (req, res) => {
 };
 
 module.exports.delCardId = (req, res) => {
-  Card.findOneAndRemove({ _id: req.params.cardId })
-    .orFail(new Error('WrongId'))
+  const owner = req.user._id;
+  Card.findOne({ _id: req.params.cardId, owner })
+    .orFail(() => new Error('Not Found'))
+    .then((card) => {
+      if (owner !== card.owner) {
+        return Promise.reject(new Error('Denied'));
+      }
+      return Card.findOneAndRemove({ _id: req.params.cardId });
+    })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.message === 'WrongId') {
-        res.status(404).send({ message: 'Нет пользователя с таким id' });
-      } else { res.status(500).send({ message: 'Ошибка сервера' }); }
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Нет пользователя с таким id' });
+      } else if (err.message === 'Not Found') {
+        res.status(404).send({ message: 'Объект не найден' });
+      } else if (err.message === 'Denied') { res.status(403).send({ message: 'у вас нет прав' }); } else { res.status(500).send({ message: 'Ошибка сервера' }); }
     });
 };
 
